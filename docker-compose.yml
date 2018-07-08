@@ -1,0 +1,76 @@
+version: '3.1'
+
+services:
+
+  consignment-cli:
+      build: ./consignment-cli
+      container_name: consignment-cli
+      image: consignment-cli
+      depends_on:
+        - consignment-service
+      environment:
+        MICRO_REGISTRY: "mdns"
+
+  consignment-service:
+    build: ./consignment-service
+    container_name: consignment-service
+    image: consignment-service
+    ports:
+      - 50051:50051
+    depends_on:
+      - vessel-service
+    restart: on-failure
+    environment:
+      MICRO_ADDRESS: ":50051"
+      MICRO_REGISTRY: "mdns"
+      DB_HOST: "datastore:27017"
+
+  vessel-service:
+    build: ./vessel-service
+    container_name: vessel-service
+    image: vessel-service
+    ports:
+      - 50052:50051
+    depends_on:
+      - datastore
+    restart: on-failure
+    environment:
+      MICRO_ADDRESS: ":50051"
+      MICRO_REGISTRY: "mdns"
+      DB_HOST: "datastore:27017"
+
+  user-service:
+    build: ./user-service
+    container_name: user-service
+    image: user-service
+    depends_on:
+      - database
+    restart: on-failure
+    environment:
+      MICRO_ADDRESS: ":50051"
+      MICRO_REGISTRY: "mdns"
+      DB_NAME: "postgres"
+      DB_HOST: "database"
+      DB_PORT: "5432"
+      DB_USER: "postgres"
+      DB_PASSWORD: "postgres"
+
+  user-cli:
+    build: ./user-cli
+    container_name: user-cli
+    image: user-cli
+    depends_on:
+      - user-service
+    environment:
+      MICRO_REGISTRY: "mdns"
+  datastore:
+    image: mongo
+    container_name: datastore
+    ports:
+      - 27017:27017
+
+  database:
+    image: postgres
+    container_name: database
+    ports:
+      - 5432:5432
